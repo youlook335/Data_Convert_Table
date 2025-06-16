@@ -1,27 +1,40 @@
-// App.tsx
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
-import Home from "./pages/Home";
-import About from "./pages/About";
-import Contact from "./pages/Contact";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import AuthPage from "./Auth";
+import Dashboard from "./Dashboard";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { useEffect, useState } from "react";
+import Navbar from "./component/Navbar";
+import Footer from "./component/Footer";
 
-const App = () => {
+function App() {
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const auth = getAuth();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+      setLoading(false); // wait until auth state resolves
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  if (loading) return <h2 style={{ textAlign: "center" }}>Loading...</h2>;
+
   return (
-    <BrowserRouter>
-      <div className="min-h-screen flex flex-col bg-white dark:bg-gray-900">
-        <Navbar />
-        <main className="flex-grow">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/contact" element={<Contact />} />
-          </Routes>
-        </main>
-        <Footer />
-      </div>
-    </BrowserRouter>
+  <>
+    <Router>
+      <Navbar/>
+      <Routes>
+        <Route path="/" element={<Navigate to={user ? "/dashboard" : "/auth"} />} />
+        <Route path="/auth" element={<AuthPage />} />
+        <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/auth" />} />
+      </Routes>
+    </Router>
+    <Footer/>
+    </>
   );
-};
+}
 
 export default App;
